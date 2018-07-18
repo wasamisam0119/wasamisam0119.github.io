@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2018-07-05T02:11:04.000Z</updated>
+  <updated>2018-07-18T13:12:10.000Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -15,6 +15,97 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Callback 与 C++抽象 函数指针与Functor</title>
+    <link href="http://yoursite.com/2018/07/18/functor_callback/"/>
+    <id>http://yoursite.com/2018/07/18/functor_callback/</id>
+    <published>2018-07-18T11:22:59.000Z</published>
+    <updated>2018-07-18T13:12:10.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>我们学习C或C++一定会碰到函数指针(function pointer) 这个概念，而C++中又有了仿函数(Functor)特性，在上课学习的时候了解过但一直没怎么使用它，这段时间在项目中碰到了回调(callback)这样的问题，正好可以拿出来谈谈。</p><p>假设我们有这样的一个需求：</p><p>我们想实现一个叫床功能，当然不是那个“叫床”哈哈，是叫人起床的意思。  </p><p>在远古时代，我们只能靠别人叫我们起床：  </p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">wakeup</span><span class="params">(name,time)</span>:</span></span><br><span class="line">    print(<span class="string">"Get the fuck up you motherfucker! It's %s %s!"</span>(time,name))</span><br></pre></td></tr></table></figure><p>但现在，我们可以设闹钟让我们起床了：  </p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">wakeup</span><span class="params">(name,time)</span>:</span></span><br><span class="line">    print(<span class="string">"Ding Ding Ding~It's %s %s!"</span>(time,name))</span><br></pre></td></tr></table></figure><p>假如我们的生活是可以程序化的，那么一天将会是这样的：</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">wakeup(name,time)</span><br><span class="line">eatBreakfast()</span><br><span class="line">goToschool()</span><br><span class="line">...</span><br></pre></td></tr></table></figure><p>我们发现wakeup可以有不同的动作方式来唤醒，我们可以选择人工叫醒也可以选择闹钟，但是都是</p><p><code>wakeup(name,time)</code>这样会产生命名冲突，那么我们变成<code>wakeup1(name,time)</code>和<code>wakeup2(name,time)</code>怎么样？可以是可以的，但是如果有上百个方式的话，我们得改100遍函数名和里面的方法。</p><p>这样既增加了重复代码，又很不好看。</p><p>所以我们改进了这个程序：</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#我们可以定义这样两个方式：</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">alarm</span><span class="params">()</span>:</span></span><br><span class="line">print(<span class="string">"Ding Ding Ding~"</span>)</span><br><span class="line">    </span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">shout</span><span class="params">()</span>:</span></span><br><span class="line">    print(<span class="string">"Get the fuck up you motherfucker!"</span>)</span><br><span class="line">    </span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">wakeup</span><span class="params">(wakeup_method,name,time)</span>:</span></span><br><span class="line">    wakeup_method()</span><br><span class="line">    print(<span class="string">"It's %s %s"</span>%(name,time))</span><br></pre></td></tr></table></figure><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">wakeup(shout,name,time)</span><br><span class="line">eatBreakfast()</span><br><span class="line">goToschool()</span><br><span class="line">...</span><br></pre></td></tr></table></figure><p>这样是不是简单多了？</p><p>我们定义一个<code>wakeup_method</code>参数，它就是函数指针，我们把函数当做参数传入<code>wakeup()</code>，在函数里调用<code>wakeup_method()</code>。   </p><p>这样带来的好处是，我们可以针对不同的人用不同的方法(在特定的事件或条件发生时由另外的一方调用，用于对该事件或条件进行响应)，我们对懒人可以用人工叫醒，对自觉一些的人用闹钟就可以了。  </p><p>简单来说，回调函数的使用增加了程序的通用性和简洁性。</p><p>那么C++里的Functor又跟函数指针有什么关系？     </p><p>Functor是一种更抽象化的函数指针。</p><p>看下面函数指针的例子：</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fnadd1</span><span class="params">( <span class="keyword">int</span> i )</span> </span>&#123; <span class="keyword">return</span> i + <span class="number">1</span>; &#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fntake10</span><span class="params">( <span class="keyword">int</span> i )</span> </span>&#123; <span class="keyword">return</span> i - <span class="number">10</span>; &#125;</span><br><span class="line">void ApplyToAllElements2( int* aiArray,int iNumElems, int(*funcptr)(int) )</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; iNumElems; i++ )</span><br><span class="line">    aiArray[i] = funcptr( aiArray[i] );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> aiMyArray[] = &#123; <span class="number">0</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,<span class="number">6</span> &#125;;</span><br><span class="line"></span><br><span class="line">ApplyToAllElements2( aiMyArray, <span class="number">7</span>, fnadd1 );<span class="comment">//对数组每个元素加1</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> ( <span class="keyword">const</span> <span class="keyword">int</span>&amp; myelem : aiMyArray )</span><br><span class="line">  <span class="built_in">cout</span> &lt;&lt; myelem &lt;&lt; <span class="string">" "</span>;<span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure><p>我们定义了一个数组，和一个函数<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">```c++</span><br><span class="line">class MyFunctor</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">public:</span><br><span class="line"></span><br><span class="line">MyFunctor( int var )</span><br><span class="line"></span><br><span class="line">: var( var )</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int operator() ( int x )</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">return x + var;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">protected:</span><br><span class="line"></span><br><span class="line">int var;</span><br></pre></td></tr></table></figure></p><p>这就是Functor，functor对operator()进行重载，我们可以在里面随意编写我们想进行的操作。实际上是把函数变成了一个对象了。   </p><p>在这个例子中，初始化这个functor时我们要给<figure class="highlight plain"><figcaption><span>x```，也就是数组里的一个元素，对元素进行加法操作。</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">再看</span><br><span class="line"></span><br><span class="line">```c++</span><br><span class="line">int aiMyArray[] = &#123; 0,1,2,3,4,5,6 &#125;;</span><br><span class="line"></span><br><span class="line">iAdd = 1;</span><br><span class="line">addVariable = MyFunctor(iAdd)//实例化MyFunctor</span><br><span class="line">ApplyToAllElements( aiMyArray, 7, addVariable );</span><br><span class="line">for ( const int&amp; myelem : aiMyArray ) // range-for</span><br><span class="line">  cout &lt;&lt; myelem &lt;&lt; &quot; &quot;;cout &lt;&lt; endl;</span><br><span class="line"></span><br><span class="line">template &lt; typename T &gt;</span><br><span class="line">void ApplyToAllElements( int* aiArray, int iNum, T addfunc )//相当于一个map函数</span><br><span class="line">&#123;</span><br><span class="line">  for ( int i = 0; i &lt; iNum; i++ )</span><br><span class="line">  &#123;</span><br><span class="line">    aiArray[i] = addfunc( aiArray[i] );</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p><p>相比较于第一个方式而言，我们不需要定义那么多的加法函数，而只需要每次变动不同的<code>iAdd</code>值就可以了。   </p><blockquote><p>参考：<a href="">回调函数（callback）是什么?</a> <a href="https://www.zhihu.com/question/19801131" target="_blank" rel="noopener">https://www.zhihu.com/question/19801131</a>)</p><p>​      <a href="https://blog.csdn.net/sagittarius_warrior/article/details/50032731" target="_blank" rel="noopener">浅谈：函数指针、仿函数和函数适配</a></p><p>​      <a href="http://www.cppblog.com/kevinlynx/archive/2008/03/17/44678.html" target="_blank" rel="noopener">实现functor - 增强型的函数指针</a></p></blockquote>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;我们学习C或C++一定会碰到函数指针(function pointer) 这个概念，而C++中又有了仿函数(Functor)特性，在上课学习的时候了解过但一直没怎么使用它，这段时间在项目中碰到了回调(callback)这样的问题，正好可以拿出来谈谈。&lt;/p&gt;
+&lt;p&gt;假设我们
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>Hey Chink!——种族问题的来源</title>
+    <link href="http://yoursite.com/2018/07/11/heychink/"/>
+    <id>http://yoursite.com/2018/07/11/heychink/</id>
+    <published>2018-07-11T09:22:43.000Z</published>
+    <updated>2018-07-12T15:22:44.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>近年来歧视华人的消息频频出现在各大媒体，大有铺天盖地之势。闹得许多白人和亚裔讲话都神经紧张，小心翼翼的。</p><p>那究竟什么是种族歧视？</p><p>种族主义的观念是如何产生的？</p><p>多种族国家里人种的优越感从何而来？</p><p>为什么大家会讲英文？为什么出现了殖民？印第安人好好的，美国人为什么要屠杀印第安人？</p><p>这一系列的问题无休无止，但似乎都有关联。</p><p>这是摘自澳大利亚政府人权委员会对种族歧视的定义：</p><blockquote><p>Racism takes many forms and can happen in many places. It includes prejudice, discrimination or hatred directed at someone because of their colour, ethnicity or national origin.</p></blockquote><p>因为有了国家。   </p><p>因为有了不同的文明，一个部落的文明和其科技水平的落后会造成什么？      </p><p>其本身并不会造成什么，但是当其拥有大量的<strong>资源</strong>和其他更高文明的种族因为资源的问题引起<strong>冲突</strong>的时候，这时候物竞天择就产生了。   </p><p><strong>弱肉强食，自然选择</strong>。   </p><p>在美国早期的时候，印第安人占有大量土地资源但不利用。美国人欧洲人就蠢蠢欲动了：你一个无知的白痴凭什么占有那么多资源，土地下面都是黄金，上面我们还可以工业化生产，我们要赶走你们。归根结底，还是资源的有限，造成了争夺。  </p><p>但是国家这个概念本身，就造成了利益的对立。自私便在这里开始。  </p><p>一国希望自己强大，通过经济手段政治手段掠夺其他国家的财富。就算是世界第一，掌握了大部分的资源，又能怎样？但是这又是非常的矛盾，如果自己不变强，就会被其他国家消灭。   </p><p>日本侵略中国，英国殖民世界，事出有因，无外乎此。    </p><p>但是我认为，这些国家的统治者太没有human nature了，贪婪和欲望，是人类的悲哀。</p><p>中国会是一命运吗？亚洲人最终会不会像印第安人一样被圈养起来呢？</p><p><a href="https://www.humanrights.gov.au/what-racism-1" target="_blank" rel="noopener">https://www.humanrights.gov.au/what-racism-1</a></p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;近年来歧视华人的消息频频出现在各大媒体，大有铺天盖地之势。闹得许多白人和亚裔讲话都神经紧张，小心翼翼的。&lt;/p&gt;
+&lt;p&gt;那究竟什么是种族歧视？&lt;/p&gt;
+&lt;p&gt;种族主义的观念是如何产生的？&lt;/p&gt;
+&lt;p&gt;多种族国家里人种的优越感从何而来？&lt;/p&gt;
+&lt;p&gt;为什么大家会讲英文？为
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>Songyee Baek</title>
+    <link href="http://yoursite.com/2018/07/06/Songyee_Bai/"/>
+    <id>http://yoursite.com/2018/07/06/Songyee_Bai/</id>
+    <published>2018-07-06T03:58:56.000Z</published>
+    <updated>2018-07-06T03:58:56.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>白颂伊是个有个性的女孩子，是我在西班牙遇到她时给我的第一印象。    </p><p>她说她平常画画，在首尔租了一个小小的工作室。我浏览了她instagram上的照片，她的画有种无法言喻的热烈想要表达出来，像是着了魔的人。    </p><div align="center"> <img src="https://github.com/wasamisam0119/wasamisam0119.github.io/blob/master/images/Songyee-painting1.png?raw=true" alt="Painting1"></div><p>我很惊奇她能画出这样的画，我便问她：“你平时除了画画还干些什么？”她说:”I like surfing. You know? In the sea.” </p><p>“哦！冲浪啊！冲浪很厉害啊。”我回道，“我只会在网上冲浪。”     </p><p>她说: “I spend three days, surfing, you know, a week, and four days painting, in Seoul.”</p><p>“真的吗？每周要花三天时间冲浪？为什么呢？”    </p><p>“I really love surfing, you know? Seoul is far from the sea, so I have to, live near the sea, for three days. Because when I am surfing I can watch…watch the sea, and talk with the sea, you can even hear his breathing, you know? The sea can talk! And sea gives me inspiration on painting. ”</p><p>她英文不太流利，但我还是听懂了，”真的吗？大海真的会说话吗？”我很惊奇她说出的一切，她冲浪不像是普通的爱好，却像是一种着魔般的吸引, 她说她冲浪的时候可以和大海对话，甚至可以听到他的呼吸。大海给了她绘画的灵感。    </p><p>那会是怎样的感觉呢？我努力地想象着，但始终无法体会她所说的一切，我恨不得跑进她的脑袋里，深深地钻进去，看看她的海马体长啥样。   </p><div align="center"> <img src="https://github.com/wasamisam0119/wasamisam0119.github.io/blob/master/images/Songyee-painting2.png?raw=true" alt="Painting2"></div>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;白颂伊是个有个性的女孩子，是我在西班牙遇到她时给我的第一印象。    &lt;/p&gt;
+&lt;p&gt;她说她平常画画，在首尔租了一个小小的工作室。我浏览了她instagram上的照片，她的画有种无法言喻的热烈想要表达出来，像是着了魔的人。    &lt;/p&gt;
+&lt;div align=&quot;cente
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2018/07/05/Aria2/"/>
+    <id>http://yoursite.com/2018/07/05/Aria2/</id>
+    <published>2018-07-05T15:04:53.000Z</published>
+    <updated>2018-07-08T14:17:40.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="Aria2-挂载-GoogleDrive-做离线网盘-以及碰到的坑"><a href="#Aria2-挂载-GoogleDrive-做离线网盘-以及碰到的坑" class="headerlink" title="Aria2 挂载 GoogleDrive 做离线网盘 以及碰到的坑"></a>Aria2 挂载 GoogleDrive 做离线网盘 以及碰到的坑</h1><h5 id="Note：本教程涉及命令较多，建议先浏览一遍再动手！"><a href="#Note：本教程涉及命令较多，建议先浏览一遍再动手！" class="headerlink" title="Note：本教程涉及命令较多，建议先浏览一遍再动手！"></a>Note：本教程涉及命令较多，建议先浏览一遍再动手！</h5><h3 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h3><p>近五年来，中国大陆各大下载工具的限制越来越多，比如*雷。用大陆服务器下载很多资源被屏蔽，所以萌生自建一个离线网盘，用国外服务器下载资源的想法。  </p><h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><blockquote><p>VPS一台。至少512M内存，硬盘要求不高，但是最好10G以上。本教程基于centos7，所以最好安装centos7系统！</p></blockquote><h3 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h3><p>Aria把文件下载到服务器，在服务器上挂载google drive，再把文件移动到google drive盘自动上传。  </p><h3 id="效果展示"><a href="#效果展示" class="headerlink" title="效果展示"></a>效果展示</h3><p>! <a href="">DownloadSpeed</a>  </p><h3 id="教程"><a href="#教程" class="headerlink" title="教程"></a>教程</h3><ul><li><strong>1、centos 7安装google-drive-ocamlfuse</strong></li><li><strong>安装必要环境</strong></li><li><code>yum install -y git</code><br><code>yum install -y hg</code><br><code>yum install sqlite-devel fuse fuse-devel libcurl-devel zlib-devel m4</code></li><li><strong>安装opam</strong></li><li><code>yum install ocaml ocamldoc ocaml-camlp4-devel</code><br><code>wget https://raw.github.com/ocaml/opam/master/shell/opam_installer.sh -O - | sh -s /usr/local/bin/</code><br><code>yum install</code></li><li><strong>安装google-drive-ocamlfuse</strong></li><li><code>opam init</code><br><code>opam update</code><br><code>opam install depext</code><br><code>opam depext google-drive-ocamlfuse</code><br><code>opam install google-drive-ocamlfuse</code></li></ul><p>测试是否安装成功：google-drive-ocamlfuse -help，如果出现帮助内容，说明安装成功。如果提示命令不存在，可以重启一下，再试试命令。</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;Aria2-挂载-GoogleDrive-做离线网盘-以及碰到的坑&quot;&gt;&lt;a href=&quot;#Aria2-挂载-GoogleDrive-做离线网盘-以及碰到的坑&quot; class=&quot;headerlink&quot; title=&quot;Aria2 挂载 GoogleDrive 做离线网盘
+      
+    
+    </summary>
+    
+    
+  </entry>
   
   <entry>
     <title>毕业</title>
@@ -32,29 +123,6 @@
         &lt;p&gt;今天骑车去乡下，要把自行车寄到朋友那。    &lt;/p&gt;
 &lt;p&gt;迎面驶来的车和放学的小孩，在英国狭窄的马路上纷纷向后，时不时出现一个刮的异常平整的草坪，足球还是那么受欢迎。    &lt;/p&gt;
 &lt;p&gt;把自行车托付之后，准备去附近的公车站坐车回家，我走到了马路边，乡间的一辆辆车又呼
-      
-    
-    </summary>
-    
-    
-  </entry>
-  
-  <entry>
-    <title>Songyee Baek</title>
-    <link href="http://yoursite.com/2018/07/05/Songyee_Bai/"/>
-    <id>http://yoursite.com/2018/07/05/Songyee_Bai/</id>
-    <published>2018-07-05T02:05:12.000Z</published>
-    <updated>2018-07-05T02:05:12.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>白颂伊是个有个性的女孩子，是我在西班牙遇到她时给我的第一印象。    </p><p>她说她平常画画，在首尔租了一个小小的工作室。我浏览了她instagram上的照片，她的画有种无法言喻的热烈想要表达出来，像是着了魔的人。    </p><div align="center"> <img src="https://github.com/wasamisam0119/wasamisam0119.github.io/blob/master/images/Songyee-painting1.png?raw=true" alt="Painting1"></div><p>我很惊奇她能画出这样的画，我便问她：“你平时除了画画还干些什么？”她说:”I like surfing. You know? In the sea.” </p><p>“哦！冲浪啊！冲浪很厉害啊。”我回道，“我只会在网上冲浪哈哈。”     </p><p>她说: “I spend three days, surfing, you know, a week, and four days painting, in Seoul.”</p><p>“真的吗？每周要花三天时间冲浪？为什么呢？”    </p><p>“I really love surfing, you know? Seoul is far from the sea, so I have to, live near the sea, for three days. Because when I am surfing I can watch…watch the sea, and talk with the sea, you can even hear his breathing, you know? The sea can talk! And sea gives me inspiration on painting. ”</p><p>她英文不太流利，但我还是听懂了，”真的吗？大海真的会说话吗？”我很惊奇她说出的一切，她冲浪不像是普通的爱好，却像是一种着魔般的吸引, 她说她冲浪的时候可以和大海对话，甚至可以听到他的呼吸。大海给了她绘画的灵感。    </p><p>那会是怎样的感觉呢？我努力地想象着，但始终无法体会她所说的一切，我恨不得跑进她的脑袋里，深深地钻进去，看看她的海马体长啥样。   </p><div align="center"> <img src="https://github.com/wasamisam0119/wasamisam0119.github.io/blob/master/images/Songyee-painting2.png?raw=true" alt="Painting2"></div>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;p&gt;白颂伊是个有个性的女孩子，是我在西班牙遇到她时给我的第一印象。    &lt;/p&gt;
-&lt;p&gt;她说她平常画画，在首尔租了一个小小的工作室。我浏览了她instagram上的照片，她的画有种无法言喻的热烈想要表达出来，像是着了魔的人。    &lt;/p&gt;
-&lt;div align=&quot;cente
       
     
     </summary>
