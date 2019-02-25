@@ -238,6 +238,9 @@ a:hover, a:active {
   letter-spacing: 5px;
   line-height: 1;
 }
+.post .post-img {
+  vertical-align: middle;
+}
 .post .post-title h2 {
   text-transform: uppercase;
   letter-spacing: 1px;
