@@ -238,7 +238,7 @@ a:hover, a:active {
   letter-spacing: 5px;
   line-height: 1;
 }
-.post .post-img {
+.post .post-info .post-img {
   vertical-align: middle;
 }
 .post .post-title h2 {
