@@ -215,6 +215,10 @@ header .nav-list-item a {
   padding-top: 1em;
 }
 
+.post .post-info .post-img {
+  vertical-align: middle;
+}
+
 .post-block .post-title {
   margin: .65em 0;
   font-size: 1.5em;
